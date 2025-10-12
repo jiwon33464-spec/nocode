@@ -28,6 +28,28 @@ const Terminal: React.FC<TerminalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>("terminal");
   const [execScript, setExecScript] = useState<string | null>(null);
+  const [isSelectionMode, setIsSelectionMode] = useState<boolean>(false);
+
+  // Mode switching function
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    console.log(`🔄 모드 전환: ${!isSelectionMode ? '선택' : '입력'} 모드`);
+  };
+
+  // Keyboard shortcuts for mode switching
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+Shift+S (또는 Cmd+Shift+S) for toggling selection mode
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'S') {
+        e.preventDefault();
+        toggleSelectionMode();
+        console.log('⌨️ 키보드 단축키로 모드 전환');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Refs for terminal containers
   const terminalRef = useRef<HTMLDivElement>(null);
@@ -137,141 +159,67 @@ const Terminal: React.FC<TerminalProps> = ({
       terminal.open(containerRef.current);
       fitAddon.fit();
 
-      // 강제로 텍스트 선택 활성화
-      if (terminal.element) {
-        terminal.element.style.userSelect = 'text';
-        terminal.element.style.webkitUserSelect = 'text';
-        terminal.element.style.cursor = 'text';
+      // 터미널 모드에 따른 설정 적용
+      const applyTerminalMode = (selectionModeEnabled: boolean) => {
+        if (!terminal.element) return;
 
-        // 터미널의 모든 레이어에 텍스트 선택 활성화
-        const enableTextSelection = (element: Element) => {
-          const style = (element as HTMLElement).style;
-          style.userSelect = 'text';
-          style.webkitUserSelect = 'text';
-          (style as any).mozUserSelect = 'text';
-          (style as any).msUserSelect = 'text';
-          style.pointerEvents = 'auto';
-        };
+        console.log(`🔧 터미널 모드 적용: ${selectionModeEnabled ? '선택' : '입력'} 모드`);
 
-        // 모든 xterm 관련 요소들에 설정 적용
-        const selectors = [
-          '.xterm-screen',
-          '.xterm-viewport',
-          '.xterm-rows',
-          '.xterm-text-layer',
-          '.xterm-selection',
-          '.xterm'
-        ];
+        if (selectionModeEnabled) {
+          // 선택 모드: 텍스트 선택 활성화, 입력 비활성화
+          const enableTextSelection = (element: HTMLElement) => {
+            element.style.setProperty('user-select', 'text', 'important');
+            element.style.setProperty('-webkit-user-select', 'text', 'important');
+            element.style.setProperty('cursor', 'text', 'important');
+          };
 
-        selectors.forEach(selector => {
-          const elements = terminal.element?.querySelectorAll(selector);
-          if (elements) {
-            elements.forEach(enableTextSelection);
+          // 모든 요소에 텍스트 선택 활성화
+          enableTextSelection(terminal.element);
+          const allElements = terminal.element.querySelectorAll('*');
+          allElements.forEach((el) => enableTextSelection(el as HTMLElement));
+
+          // Canvas 마우스 이벤트 비활성화 (텍스트 선택 우선)
+          const canvas = terminal.element.querySelector('canvas');
+          if (canvas) {
+            (canvas as HTMLElement).style.setProperty('pointer-events', 'none', 'important');
           }
-        });
 
-        // 전체 터미널 요소에도 적용
-        enableTextSelection(terminal.element);
+          // 터미널 입력 비활성화
+          terminal.options.disableStdin = true;
+          console.log('✅ 선택 모드 활성화: 텍스트 선택 가능, 입력 비활성화');
+        } else {
+          // 입력 모드: 키보드 입력 활성화, 텍스트 선택 비활성화
+          const disableTextSelection = (element: HTMLElement) => {
+            element.style.setProperty('user-select', 'none', 'important');
+            element.style.setProperty('-webkit-user-select', 'none', 'important');
+            element.style.setProperty('cursor', 'default', 'important');
+          };
 
-        // 동적으로 생성되는 터미널 요소들도 처리
-        const observer = new MutationObserver((mutations) => {
-          mutations.forEach((mutation) => {
-            mutation.addedNodes.forEach((node) => {
-              if (node instanceof HTMLElement) {
-                enableTextSelection(node);
-                // 새로 추가된 노드의 자식들도 처리
-                const childElements = node.querySelectorAll('*');
-                childElements.forEach(enableTextSelection);
-              }
-            });
-          });
-        });
+          // 모든 요소에 텍스트 선택 비활성화
+          disableTextSelection(terminal.element);
+          const allElements = terminal.element.querySelectorAll('*');
+          allElements.forEach((el) => disableTextSelection(el as HTMLElement));
 
-        // 터미널 요소의 변화를 감지
-        observer.observe(terminal.element, {
-          childList: true,
-          subtree: true
-        });
-
-        // xterm의 마우스 이벤트 핸들러 완전 제거 및 재구성
-        console.log('🔧 xterm 마우스 이벤트 핸들러 재설정 중...');
-
-        // xterm의 내부 이벤트 리스너들을 제거
-        const removeXtermMouseListeners = () => {
-          if (terminal.element) {
-            const clonedElement = terminal.element.cloneNode(true) as HTMLElement;
-            terminal.element.parentNode?.replaceChild(clonedElement, terminal.element);
-            (terminal as any).element = clonedElement;
+          // Canvas 마우스 이벤트 활성화 (터미널 입력 우선)
+          const canvas = terminal.element.querySelector('canvas');
+          if (canvas) {
+            (canvas as HTMLElement).style.setProperty('pointer-events', 'auto', 'important');
           }
-        };
 
-        // xterm 초기화 완료 후 선택적 오버라이드 (입력 기능 보존)
-        setTimeout(() => {
-          console.log('🔄 xterm 선택적 오버라이드 시작 - 입력 기능 보존');
+          // 터미널 입력 활성화
+          terminal.options.disableStdin = false;
+          terminal.focus();
+          console.log('✅ 입력 모드 활성화: 키보드 입력 가능, 텍스트 선택 비활성화');
+        }
+      };
 
-          if (terminal.element) {
-            // 강력한 텍스트 선택 활성화 (이벤트 제거하지 않고)
-            const forceTextSelection = (el: HTMLElement) => {
-              el.style.setProperty('user-select', 'text', 'important');
-              el.style.setProperty('-webkit-user-select', 'text', 'important');
-              el.style.setProperty('cursor', 'text', 'important');
-              // pointer-events는 건드리지 않아서 키보드 입력 보존
-            };
+      // 초기 모드 설정 (기본값: 입력 모드)
+      setTimeout(() => {
+        applyTerminalMode(false);
+      }, 100);
 
-            // 모든 요소에 텍스트 선택만 적용
-            forceTextSelection(terminal.element);
-            const allElements = terminal.element.querySelectorAll('*');
-            allElements.forEach((el) => forceTextSelection(el as HTMLElement));
-
-            // canvas는 마우스만 비활성화하고 키보드는 유지
-            const canvas = terminal.element.querySelector('canvas');
-            if (canvas) {
-              (canvas as HTMLElement).style.setProperty('pointer-events', 'none', 'important');
-              console.log('🎨 Canvas 마우스 이벤트만 비활성화 (키보드 유지)');
-            }
-
-            // 터미널에 포커스를 주어 키보드 입력 가능하게 함
-            terminal.focus();
-            console.log('⌨️ 터미널 포커스 설정 - 키보드 입력 활성화');
-
-            // 터미널 클릭 시 포커스 유지 (텍스트 선택과 충돌하지 않도록)
-            terminal.element.addEventListener('click', (e) => {
-              // 텍스트 선택이 없을 때만 포커스
-              if (!window.getSelection()?.toString()) {
-                terminal.focus();
-                console.log('🖱️ 터미널 클릭 - 포커스 복원');
-              }
-            });
-
-            // 키보드 이벤트가 터미널에 전달되도록 보장
-            document.addEventListener('keydown', (e) => {
-              // 터미널 영역에서 키보드 이벤트 발생 시 터미널로 포커스
-              if (terminal.element?.contains(e.target as Node)) {
-                if (!terminal.element.matches(':focus-within')) {
-                  terminal.focus();
-                  console.log('⌨️ 키보드 입력 감지 - 터미널 포커스');
-                }
-              }
-            });
-
-            console.log('✅ 텍스트 선택 + 키보드 입력 균형 설정 완료');
-          }
-        }, 1500);
-
-        // 주기적으로 텍스트 선택 상태 확인 및 재설정
-        const maintainTextSelection = () => {
-          if (terminal.element) {
-            const canvas = terminal.element.querySelector('canvas');
-            if (canvas && (canvas as HTMLElement).style.pointerEvents !== 'none') {
-              (canvas as HTMLElement).style.setProperty('pointer-events', 'none', 'important');
-              console.log('🔧 Canvas 이벤트 차단 재설정');
-            }
-          }
-        };
-
-        // 2초마다 체크
-        setInterval(maintainTextSelection, 2000);
-      }
+      // 모드 변경 감지 및 적용을 위한 참조 저장
+      (terminal as any)._applyTerminalMode = applyTerminalMode;
 
       // Handle input
       terminal.onData((data) => {
@@ -414,6 +362,22 @@ const Terminal: React.FC<TerminalProps> = ({
       console.error(`❌ 일반 터미널 인스턴스 생성 실패:`, terminalId.current);
     }
   }, [createTerminalInstance, terminalInstance]);
+
+  // Apply mode changes to all terminals when selection mode changes
+  useEffect(() => {
+    console.log(`🔄 모드 변경 감지: ${isSelectionMode ? '선택' : '입력'} 모드`);
+
+    // 모든 터미널 인스턴스에 모드 적용
+    if (terminalInstance?.terminal && (terminalInstance.terminal as any)._applyTerminalMode) {
+      (terminalInstance.terminal as any)._applyTerminalMode(isSelectionMode);
+    }
+    if (claudeTerminalInstance?.terminal && (claudeTerminalInstance.terminal as any)._applyTerminalMode) {
+      (claudeTerminalInstance.terminal as any)._applyTerminalMode(isSelectionMode);
+    }
+    if (execTerminalInstance?.terminal && (execTerminalInstance.terminal as any)._applyTerminalMode) {
+      (execTerminalInstance.terminal as any)._applyTerminalMode(isSelectionMode);
+    }
+  }, [isSelectionMode, terminalInstance, claudeTerminalInstance, execTerminalInstance]);
 
   // Initialize Claude terminal
   const initializeClaudeTerminal = useCallback(() => {
@@ -953,6 +917,15 @@ const Terminal: React.FC<TerminalProps> = ({
             )}
           </div>
           <div className="terminal-actions">
+            {/* Exec 모드에서도 모드 전환 버튼 표시 */}
+            <button
+              onClick={toggleSelectionMode}
+              className={`action-button mode-toggle-btn ${isSelectionMode ? 'selection-active' : 'input-active'}`}
+              title={`${isSelectionMode ? '입력 모드로 전환 (키보드 입력 활성화)' : '선택 모드로 전환 (텍스트 선택 활성화)'} | 단축키: Ctrl+Shift+S`}
+            >
+              {isSelectionMode ? '⌨️ 입력' : '🖱️ 선택'}
+            </button>
+
             <button onClick={clearTerminal} className="action-button">
               🗑️ Clear
             </button>
@@ -1000,6 +973,15 @@ const Terminal: React.FC<TerminalProps> = ({
           </button>
         </div>
         <div className="terminal-actions">
+          {/* 모드 전환 버튼 */}
+          <button
+            onClick={toggleSelectionMode}
+            className={`action-button mode-toggle-btn ${isSelectionMode ? 'selection-active' : 'input-active'}`}
+            title={`${isSelectionMode ? '입력 모드로 전환 (키보드 입력 활성화)' : '선택 모드로 전환 (텍스트 선택 활성화)'} | 단축키: Ctrl+Shift+S`}
+          >
+            {isSelectionMode ? '⌨️ 입력' : '🖱️ 선택'}
+          </button>
+
           {activeTab === "terminal" && (
             <>
               <button onClick={clearTerminal} className="action-button">
