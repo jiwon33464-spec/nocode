@@ -33,18 +33,25 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
 
   useEffect(() => {
     if (isVisible) {
-      checkPlatform();
-      startInstallation();
+      const platform = window.require('os').platform();
+      const windowsPlatform = platform === 'win32';
+      setIsWindows(windowsPlatform);
+
+      console.log('플랫폼 감지:', platform, 'Windows:', windowsPlatform);
+
+      // 플랫폼 설정 후 설치 시작
+      setTimeout(() => {
+        startInstallation(windowsPlatform);
+      }, 100);
     }
   }, [isVisible]);
 
-  const checkPlatform = () => {
-    const platform = window.require('os').platform();
-    setIsWindows(platform === 'win32');
-  };
-
-  const startInstallation = async () => {
+  const startInstallation = async (windowsPlatform?: boolean) => {
     try {
+      const isWindowsPlatform = windowsPlatform !== undefined ? windowsPlatform : isWindows;
+
+      console.log('설치 시작 - Windows 플랫폼:', isWindowsPlatform);
+
       setInstallProgress({
         stage: 'checking',
         message: 'Claude CLI 설치 상태를 확인하고 있습니다...',
@@ -66,7 +73,7 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
         return;
       }
 
-      if (isWindows) {
+      if (isWindowsPlatform) {
         // Windows에서는 비밀번호 입력 없이 바로 설치 진행
         setInstallProgress({
           stage: 'installing',
@@ -260,7 +267,7 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
             </div>
           </div>
 
-          {showPasswordInput && (
+          {showPasswordInput && !isWindows && (
             <div className="password-input-section">
               <div className="password-description">
                 <p>🔒 Claude CLI 설치를 위해 관리자 권한이 필요합니다.</p>
@@ -325,7 +332,7 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
 
           {installProgress.stage === 'error' && (
             <div className="error-actions">
-              <button className="retry-btn" onClick={startInstallation}>
+              <button className="retry-btn" onClick={() => startInstallation(isWindows)}>
                 🔄 다시 시도
               </button>
               <button className="cancel-btn" onClick={onCancel}>
