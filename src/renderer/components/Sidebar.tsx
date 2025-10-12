@@ -167,8 +167,10 @@ const Sidebar: React.FC<SidebarProps> = ({
       try {
         const fileItem = contextMenu.item as FileItem;
         const filename = fileItem.name;
+        const filePath = fileItem.path!;
 
         console.log(`🤖 Claude를 실행합니다: "${filename}"`);
+        console.log(`📁 파일 경로: "${filePath}"`);
         console.log("─".repeat(50));
 
         // Claude CLI 설치 상태 확인
@@ -193,9 +195,16 @@ const Sidebar: React.FC<SidebarProps> = ({
           onTerminalTabSwitch();
         }
 
-        // build.js의 executeClaude와 동일한 로직
+        // 프로젝트 루트 경로 가져오기
         const BASE_DIR = await ipcRenderer.invoke("get-default-path");
-        const base = `${filename}를 읽고 프롬프트를 읽어서 코드를 만들어줘. 프로젝트 루트는 ${BASE_DIR} 입니다. 만들 코드는 루트의 코드폴더에 ${filename} 폴더 내에 만들어줘. 코드를 다 작성하고 나면 package.json에 만든 코드를 실행할 수 있는 ${filename} 이름과 동일한 명령어를 만들어줘.
+
+        // 파일명에서 확장자 제거 (폴더명으로 사용)
+        const folderName = filename.replace(/\.[^/.]+$/, "");
+
+        // 추가 지시사항을 임시 파일로 작성
+        const tempInstructionPath = `${BASE_DIR}/.temp-claude-instruction.md`;
+        const instructionContent = `${filename}를 읽고 프롬프트를 읽어서 코드를 만들어줘. 프로젝트 루트는 ${BASE_DIR} 입니다. 만들 코드는 루트의 코드폴더에 ${folderName} 폴더 내에 만들어줘. 코드를 다 작성하고 나면 package.json에 만든 코드를 실행할 수 있는 ${folderName} 이름과 동일한 명령어를 만들어줘.
+
 추가적으로 프롬프트 내용에
 
 ## 구현 세부
@@ -213,24 +222,27 @@ const Sidebar: React.FC<SidebarProps> = ({
 - [ ] SIGINT 안전 종료
 - [ ] 에러 발생 시 메시지와 종료 코드
 
-위 내용을 추가적으로 적용해줘.
+위 내용을 추가적으로 적용해줘.`;
 
-        `;
-        const promptText = base; // extraMessage 없이 기본 메시지만 사용
+        // 임시 지시사항 파일 생성
+        await ipcRenderer.invoke("fs-writefile", tempInstructionPath, instructionContent);
+        console.log(`✅ 임시 지시사항 파일 생성: ${tempInstructionPath}`);
 
-        // Windows에서 안전한 명령어 실행을 위한 처리
+        // Windows와 Unix/macOS 구분
         const isWindows = window.require('os').platform() === 'win32';
 
         let fullCommand: string;
         if (isWindows) {
-          // Windows에서 PowerShell에서 안전한 실행을 위해 Base64 인코딩 사용
-          const encodedPrompt = Buffer.from(promptText, 'utf8').toString('base64');
-          fullCommand = `powershell -Command "$prompt = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${encodedPrompt}')); claude --permission-mode bypassPermissions $prompt"`;
+          // Windows PowerShell: 한글 경로를 안전하게 처리
+          // PowerShell에서는 && 대신 ; 사용
+          // chcp 65001로 UTF-8 설정 후 claude 실행
+          fullCommand = `chcp 65001 >$null; claude --permission-mode bypassPermissions "${tempInstructionPath}" "${filePath}"`;
         } else {
-          fullCommand = `claude --permission-mode bypassPermissions "${promptText}"`;
+          // Unix/macOS: 작은따옴표로 경로 감싸기
+          fullCommand = `claude --permission-mode bypassPermissions '${tempInstructionPath}' '${filePath}'`;
         }
 
-        console.log(`실행 명령어 (Windows: ${isWindows}): ${fullCommand}`);
+        console.log(`실행 명령어 (Windows: ${isWindows}):`, fullCommand);
 
         // 터미널에 명령어 실행 - Terminal 탭에서 실행
         console.log(`📤 터미널에 명령어 전송 시도:`, {
@@ -283,8 +295,10 @@ const Sidebar: React.FC<SidebarProps> = ({
       try {
         const fileItem = contextMenu.item as FileItem;
         const filename = fileItem.name;
+        const filePath = fileItem.path!;
 
         console.log(`✏️ 파일 수정을 위해 Doctor를 실행합니다: "${filename}"`);
+        console.log(`📁 파일 경로: "${filePath}"`);
         console.log("─".repeat(50));
 
         // Claude CLI 설치 상태 확인
@@ -309,23 +323,34 @@ const Sidebar: React.FC<SidebarProps> = ({
           onDoctorTabSwitch();
         }
 
-        // build.js의 executeClaude와 유사한 로직이지만 수정용 메시지
+        // 프로젝트 루트 경로 가져오기
         const BASE_DIR = await ipcRenderer.invoke("get-default-path");
-        const base = `${filename}프롬프트에 대해 수정 사항이 있어. 프로젝트 루트는 ${BASE_DIR} 입니다. 코드 폴더의 ${filename} 폴더 내의 기능도 확인해줘.`;
 
-        // Windows에서 안전한 명령어 실행을 위한 처리
+        // 파일명에서 확장자 제거 (폴더명으로 사용)
+        const folderName = filename.replace(/\.[^/.]+$/, "");
+
+        // 추가 지시사항을 임시 파일로 작성
+        const tempInstructionPath = `${BASE_DIR}/.temp-claude-edit-instruction.md`;
+        const instructionContent = `${filename}프롬프트에 대해 수정 사항이 있어. 프로젝트 루트는 ${BASE_DIR} 입니다. 코드 폴더의 ${folderName} 폴더 내의 기능도 확인해줘.`;
+
+        // 임시 지시사항 파일 생성
+        await ipcRenderer.invoke("fs-writefile", tempInstructionPath, instructionContent);
+        console.log(`✅ 임시 지시사항 파일 생성: ${tempInstructionPath}`);
+
+        // Windows와 Unix/macOS 구분
         const isWindows = window.require('os').platform() === 'win32';
 
         let fullCommand: string;
         if (isWindows) {
-          // Windows에서 PowerShell에서 안전한 실행을 위해 Base64 인코딩 사용
-          const encodedPrompt = Buffer.from(base, 'utf8').toString('base64');
-          fullCommand = `powershell -Command "$prompt = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${encodedPrompt}')); claude --permission-mode bypassPermissions $prompt"`;
+          // Windows PowerShell: 한글 경로를 안전하게 처리
+          // PowerShell에서는 && 대신 ; 사용
+          fullCommand = `chcp 65001 >$null; claude --permission-mode bypassPermissions "${tempInstructionPath}" "${filePath}"`;
         } else {
-          fullCommand = `claude --permission-mode bypassPermissions "${base}"`;
+          // Unix/macOS: 작은따옴표로 경로 감싸기
+          fullCommand = `claude --permission-mode bypassPermissions '${tempInstructionPath}' '${filePath}'`;
         }
 
-        console.log(`수정 명령어 (Windows: ${isWindows}): ${fullCommand}`);
+        console.log(`수정 명령어 (Windows: ${isWindows}):`, fullCommand);
 
         // Doctor 터미널에 명령어 전송
         console.log(`📤 Doctor 터미널에 명령어 전송 시도:`, {
@@ -530,23 +555,31 @@ const Sidebar: React.FC<SidebarProps> = ({
           onDoctorTabSwitch();
         }
 
-        // 스크립트 수정용 Claude 명령어 생성
+        // 프로젝트 루트 경로 가져오기
         const BASE_DIR = await ipcRenderer.invoke("get-default-path");
-        const promptText = `${scriptName}명령어 및 코드에 대해 수정 사항이 있어. 프로젝트 루트는 ${BASE_DIR} 입니다. ${scriptName}명령어를 먼저 실행해보고, 코드 폴더의 ${scriptName} 폴더 내의 기능에 문제가 있다면 고쳐줘.`;
 
-        // Windows에서 안전한 명령어 실행을 위한 처리
+        // 추가 지시사항을 임시 파일로 작성
+        const tempInstructionPath = `${BASE_DIR}/.temp-claude-fix-instruction.md`;
+        const instructionContent = `${scriptName}명령어 및 코드에 대해 수정 사항이 있어. 프로젝트 루트는 ${BASE_DIR} 입니다. ${scriptName}명령어를 먼저 실행해보고, 코드 폴더의 ${scriptName} 폴더 내의 기능에 문제가 있다면 고쳐줘.`;
+
+        // 임시 지시사항 파일 생성
+        await ipcRenderer.invoke("fs-writefile", tempInstructionPath, instructionContent);
+        console.log(`✅ 임시 지시사항 파일 생성: ${tempInstructionPath}`);
+
+        // Windows와 Unix/macOS 구분
         const isWindows = window.require('os').platform() === 'win32';
 
         let fullCommand: string;
         if (isWindows) {
-          // Windows에서 PowerShell에서 안전한 실행을 위해 Base64 인코딩 사용
-          const encodedPrompt = Buffer.from(promptText, 'utf8').toString('base64');
-          fullCommand = `powershell -Command "$prompt = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${encodedPrompt}')); claude --permission-mode bypassPermissions $prompt"`;
+          // Windows PowerShell: 한글 경로를 안전하게 처리
+          // PowerShell에서는 && 대신 ; 사용
+          fullCommand = `chcp 65001 >$null; claude --permission-mode bypassPermissions "${tempInstructionPath}"`;
         } else {
-          fullCommand = `claude --permission-mode bypassPermissions "${promptText}"`;
+          // Unix/macOS: 작은따옴표로 경로 감싸기
+          fullCommand = `claude --permission-mode bypassPermissions '${tempInstructionPath}'`;
         }
 
-        console.log(`수정 명령어 (Windows: ${isWindows}): ${fullCommand}`);
+        console.log(`수정 명령어 (Windows: ${isWindows}):`, fullCommand);
 
         // Doctor 터미널에 명령어 전송
         console.log(`📤 Doctor 터미널에 명령어 전송 시도:`, {
@@ -995,16 +1028,25 @@ const Sidebar: React.FC<SidebarProps> = ({
             // 1단계: Claude로 의존성 분석 및 설치
             const promptForSync = "코드 폴더내의 프로젝트들을 읽고 난후에, 필요한 의존성을 전부 설치해줘. 그밖에 동작은 일체 하면 안돼.";
 
+            // 프로젝트 루트 경로 가져오기
+            const BASE_DIR = await ipcRenderer.invoke("get-default-path");
+
+            // 추가 지시사항을 임시 파일로 작성
+            const tempSyncInstructionPath = `${BASE_DIR}/.temp-claude-sync-instruction.md`;
+            await ipcRenderer.invoke("fs-writefile", tempSyncInstructionPath, promptForSync);
+            console.log(`✅ 동기화 임시 지시사항 파일 생성: ${tempSyncInstructionPath}`);
+
             // Windows에서 안전한 명령어 실행을 위한 처리
             const isWindows = window.require('os').platform() === 'win32';
 
             let claudeCommand: string;
             if (isWindows) {
-              // Windows에서 PowerShell에서 안전한 실행을 위해 Base64 인코딩 사용
-              const encodedPrompt = Buffer.from(promptForSync, 'utf8').toString('base64');
-              claudeCommand = `powershell -Command "$prompt = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${encodedPrompt}')); claude --permission-mode bypassPermissions $prompt"`;
+              // Windows PowerShell: 한글 경로를 안전하게 처리
+              // PowerShell에서는 && 대신 ; 사용
+              claudeCommand = `chcp 65001 >$null; claude --permission-mode bypassPermissions "${tempSyncInstructionPath}"`;
             } else {
-              claudeCommand = `claude --permission-mode bypassPermissions "${promptForSync}"`;
+              // Unix/macOS: 작은따옴표로 경로 감싸기
+              claudeCommand = `claude --permission-mode bypassPermissions '${tempSyncInstructionPath}'`;
             }
             console.log(`🔄 [SYNC DEBUG] Claude 명령어 실행:`, claudeCommand);
 
