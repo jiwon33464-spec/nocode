@@ -33,6 +33,19 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const [platformInfo, setPlatformInfo] = useState<string>('감지 중...');
 
+  const handleCancel = () => {
+    // 설치 진행 중인 경우 확인 메시지 표시
+    if (installProgress.stage === 'installing') {
+      const confirmCancel = window.confirm(
+        '설치가 진행 중입니다. 정말로 취소하시겠습니까?\n\n설치를 중단하면 Claude CLI가 불완전하게 설치될 수 있습니다.'
+      );
+      if (!confirmCancel) {
+        return;
+      }
+    }
+    onCancel();
+  };
+
   useEffect(() => {
     if (isVisible) {
       const platform = window.require('os').platform();
@@ -271,9 +284,7 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
       <div className="claude-installer-modal">
         <div className="installer-header">
           <h2>🤖 Claude CLI 설치</h2>
-          {installProgress.stage === 'error' && (
-            <button className="close-btn" onClick={onCancel}>✕</button>
-          )}
+          <button className="close-btn" onClick={handleCancel} title="설치 취소">✕</button>
         </div>
 
         <div className="installer-content">
@@ -381,7 +392,7 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
               <button className="retry-btn" onClick={() => startInstallation(isWindows)}>
                 🔄 다시 시도
               </button>
-              <button className="cancel-btn" onClick={onCancel}>
+              <button className="cancel-btn" onClick={handleCancel}>
                 취소
               </button>
             </div>

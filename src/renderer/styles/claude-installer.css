@@ -67,17 +67,29 @@
 .close-btn {
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 22px;
   color: #6c757d;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 8px 12px;
+  border-radius: 6px;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
 }
 
 .close-btn:hover {
   background: #f8f9fa;
-  color: #333;
+  color: #dc3545;
+  transform: scale(1.1);
+}
+
+.close-btn:active {
+  transform: scale(0.95);
 }
 
 .installer-content {
