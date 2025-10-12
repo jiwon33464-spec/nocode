@@ -1,0 +1,88 @@
+.resizer {
+  background-color: #e1e5e9;
+  transition: background-color 0.2s ease;
+  user-select: none;
+  position: relative;
+}
+
+.resizer.horizontal {
+  width: 4px;
+  cursor: col-resize;
+  min-width: 4px;
+  max-width: 4px;
+}
+
+.resizer.vertical {
+  height: 4px;
+  cursor: row-resize;
+  min-height: 4px;
+  max-height: 4px;
+}
+
+.resizer:hover,
+.resizer.resizing {
+  background-color: #007acc;
+}
+
+.resizer.horizontal:hover,
+.resizer.horizontal.resizing {
+  background: linear-gradient(to right, #007acc, #0066b3);
+}
+
+.resizer.vertical:hover,
+.resizer.vertical.resizing {
+  background: linear-gradient(to bottom, #007acc, #0066b3);
+}
+
+/* 리사이저 활성화 시 전체 화면 효과 */
+.resizer.resizing::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.resizer.horizontal.resizing::before {
+  cursor: col-resize;
+  pointer-events: all;
+}
+
+.resizer.vertical.resizing::before {
+  cursor: row-resize;
+  pointer-events: all;
+}
+
+/* 리사이저 중앙 그립 표시 */
+.resizer::after {
+  content: '';
+  position: absolute;
+  background-color: rgba(255, 255, 255, 0.6);
+  border-radius: 2px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.resizer.horizontal::after {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 20px;
+}
+
+.resizer.vertical::after {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 2px;
+}
+
+.resizer:hover::after,
+.resizer.resizing::after {
+  opacity: 1;
+}

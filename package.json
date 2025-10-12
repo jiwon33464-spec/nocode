@@ -1,0 +1,122 @@
+{
+  "name": "nocode",
+  "version": "1.0.0",
+  "description": "A desktop application built with Electron and React",
+  "main": "dist/main.js",
+  "scripts": {
+    "claude": "claude --permission-mode bypassPermissions",
+    "dev": "webpack serve --mode development",
+    "build": "webpack --config webpack.config.js --mode production && webpack --config webpack.main.config.js --mode production",
+    "electron": "electron .",
+    "electron-dev": "NODE_ENV=development electron .",
+    "start": "npm run build && npm run electron",
+    "postinstall": "electron-builder install-app-deps",
+    "rebuild": "electron-rebuild -f",
+    "rebuild:node-pty": "electron-rebuild -f -m node_modules/node-pty",
+    "dist": "electron-builder",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:win:docker": "docker build -f Dockerfile.windows -t nocode-windows . && docker run --rm -v $(pwd)/release:/project/release nocode-windows",
+    "dist:linux": "electron-builder --linux",
+    "dist:all": "electron-builder --mac --win --linux",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "테스트": "ts-node 코드/테스트.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "build": {
+    "appId": "com.nocode.app",
+    "productName": "nocode",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*"
+    ],
+    "beforeBuild": "echo 'Building for target platform...'",
+    "npmRebuild": false,
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "identity": null,
+      "gatekeeperAssess": false,
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "requestedExecutionLevel": "asInvoker",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Development",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    }
+  },
+  "dependencies": {
+    "@slack/web-api": "^7.10.0",
+    "@types/archiver": "^6.0.3",
+    "@types/yauzl": "^2.10.3",
+    "@xterm/xterm": "^5.5.0",
+    "archiver": "^7.0.1",
+    "node-pty": "^1.1.0-beta34",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "yauzl": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "@xterm/addon-fit": "^0.10.0",
+    "css-loader": "^7.1.2",
+    "electron": "^38.2.2",
+    "electron-builder": "^26.0.12",
+    "electron-rebuild": "^3.2.9",
+    "html-webpack-plugin": "^5.6.4",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2",
+    "webpack": "^5.101.3",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.2"
+  }
+}
