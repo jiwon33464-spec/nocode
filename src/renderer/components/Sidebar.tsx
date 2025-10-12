@@ -223,16 +223,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         let fullCommand: string;
         if (isWindows) {
-          // Windows에서 PowerShell 특수문자 이스케이핑
-          const escapedPrompt = promptText
-            .replace(/\\/g, '\\\\')  // 백슬래시 이스케이핑
-            .replace(/"/g, '\\"')    // 따옴표 이스케이핑
-            .replace(/\$/g, '\\$')   // 달러 기호 이스케이핑
-            .replace(/`/g, '\\`')    // 백틱 이스케이핑
-            .replace(/\[/g, '\\[')   // 대괄호 이스케이핑
-            .replace(/\]/g, '\\]');  // 대괄호 이스케이핑
-
-          fullCommand = `powershell -Command "& {claude --permission-mode bypassPermissions '${escapedPrompt}'}"`;
+          // Windows에서 PowerShell에서 안전한 실행을 위해 Base64 인코딩 사용
+          const encodedPrompt = Buffer.from(promptText, 'utf8').toString('base64');
+          fullCommand = `powershell -Command "$prompt = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${encodedPrompt}')); claude --permission-mode bypassPermissions $prompt"`;
         } else {
           fullCommand = `claude --permission-mode bypassPermissions "${promptText}"`;
         }
@@ -325,16 +318,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         let fullCommand: string;
         if (isWindows) {
-          // Windows에서 PowerShell 특수문자 이스케이핑
-          const escapedPrompt = base
-            .replace(/\\/g, '\\\\')  // 백슬래시 이스케이핑
-            .replace(/"/g, '\\"')    // 따옴표 이스케이핑
-            .replace(/\$/g, '\\$')   // 달러 기호 이스케이핑
-            .replace(/`/g, '\\`')    // 백틱 이스케이핑
-            .replace(/\[/g, '\\[')   // 대괄호 이스케이핑
-            .replace(/\]/g, '\\]');  // 대괄호 이스케이핑
-
-          fullCommand = `powershell -Command "& {claude --permission-mode bypassPermissions '${escapedPrompt}'}"`;
+          // Windows에서 PowerShell에서 안전한 실행을 위해 Base64 인코딩 사용
+          const encodedPrompt = Buffer.from(base, 'utf8').toString('base64');
+          fullCommand = `powershell -Command "$prompt = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${encodedPrompt}')); claude --permission-mode bypassPermissions $prompt"`;
         } else {
           fullCommand = `claude --permission-mode bypassPermissions "${base}"`;
         }
@@ -553,16 +539,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         let fullCommand: string;
         if (isWindows) {
-          // Windows에서 PowerShell 특수문자 이스케이핑
-          const escapedPrompt = promptText
-            .replace(/\\/g, '\\\\')  // 백슬래시 이스케이핑
-            .replace(/"/g, '\\"')    // 따옴표 이스케이핑
-            .replace(/\$/g, '\\$')   // 달러 기호 이스케이핑
-            .replace(/`/g, '\\`')    // 백틱 이스케이핑
-            .replace(/\[/g, '\\[')   // 대괄호 이스케이핑
-            .replace(/\]/g, '\\]');  // 대괄호 이스케이핑
-
-          fullCommand = `powershell -Command "& {claude --permission-mode bypassPermissions '${escapedPrompt}'}"`;
+          // Windows에서 PowerShell에서 안전한 실행을 위해 Base64 인코딩 사용
+          const encodedPrompt = Buffer.from(promptText, 'utf8').toString('base64');
+          fullCommand = `powershell -Command "$prompt = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${encodedPrompt}')); claude --permission-mode bypassPermissions $prompt"`;
         } else {
           fullCommand = `claude --permission-mode bypassPermissions "${promptText}"`;
         }
@@ -1021,16 +1000,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             let claudeCommand: string;
             if (isWindows) {
-              // Windows에서 PowerShell 특수문자 이스케이핑
-              const escapedPrompt = promptForSync
-                .replace(/\\/g, '\\\\')  // 백슬래시 이스케이핑
-                .replace(/"/g, '\\"')    // 따옴표 이스케이핑
-                .replace(/\$/g, '\\$')   // 달러 기호 이스케이핑
-                .replace(/`/g, '\\`')    // 백틱 이스케이핑
-                .replace(/\[/g, '\\[')   // 대괄호 이스케이핑
-                .replace(/\]/g, '\\]');  // 대괄호 이스케이핑
-
-              claudeCommand = `powershell -Command "& {claude --permission-mode bypassPermissions '${escapedPrompt}'}"`;
+              // Windows에서 PowerShell에서 안전한 실행을 위해 Base64 인코딩 사용
+              const encodedPrompt = Buffer.from(promptForSync, 'utf8').toString('base64');
+              claudeCommand = `powershell -Command "$prompt = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${encodedPrompt}')); claude --permission-mode bypassPermissions $prompt"`;
             } else {
               claudeCommand = `claude --permission-mode bypassPermissions "${promptForSync}"`;
             }
