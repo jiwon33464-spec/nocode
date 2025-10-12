@@ -231,7 +231,7 @@ const Terminal: React.FC<TerminalProps> = ({
       });
 
       // 터미널에 키보드 이벤트 리스너 추가 (복사/붙여넣기 기능)
-      terminal.onKey(({ key, domEvent }) => {
+      terminal.onKey(({ domEvent }) => {
         // Ctrl+C 또는 Cmd+C로 선택된 텍스트 복사
         if ((domEvent.ctrlKey || domEvent.metaKey) && domEvent.key === "c") {
           const selection = terminal.getSelection();

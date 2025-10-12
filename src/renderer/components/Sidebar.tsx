@@ -217,9 +217,14 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         `;
         const promptText = base; // extraMessage 없이 기본 메시지만 사용
-        const fullCommand = `claude --permission-mode bypassPermissions "${promptText}"`;
 
-        console.log(`실행 명령어: ${fullCommand}`);
+        // Windows에서 한글 처리를 위해 cmd 사용
+        const isWindows = window.require('os').platform() === 'win32';
+        const fullCommand = isWindows
+          ? `cmd /c "claude --permission-mode bypassPermissions \"${promptText.replace(/"/g, '\\\"')}\""`
+          : `claude --permission-mode bypassPermissions "${promptText}"`;
+
+        console.log(`실행 명령어 (Windows: ${isWindows}): ${fullCommand}`);
 
         // 터미널에 명령어 실행 - Terminal 탭에서 실행
         console.log(`📤 터미널에 명령어 전송 시도:`, {
@@ -301,9 +306,14 @@ const Sidebar: React.FC<SidebarProps> = ({
         // build.js의 executeClaude와 유사한 로직이지만 수정용 메시지
         const BASE_DIR = await ipcRenderer.invoke("get-default-path");
         const base = `${filename}프롬프트에 대해 수정 사항이 있어. 프로젝트 루트는 ${BASE_DIR} 입니다. 코드 폴더의 ${filename} 폴더 내의 기능도 확인해줘.`;
-        const fullCommand = `claude --permission-mode bypassPermissions "${base}"`;
 
-        console.log(`수정 명령어: ${fullCommand}`);
+        // Windows에서 한글 처리를 위해 cmd 사용
+        const isWindows = window.require('os').platform() === 'win32';
+        const fullCommand = isWindows
+          ? `cmd /c "claude --permission-mode bypassPermissions \"${base.replace(/"/g, '\\\"')}\""`
+          : `claude --permission-mode bypassPermissions "${base}"`;
+
+        console.log(`수정 명령어 (Windows: ${isWindows}): ${fullCommand}`);
 
         // Doctor 터미널에 명령어 전송
         console.log(`📤 Doctor 터미널에 명령어 전송 시도:`, {
@@ -511,9 +521,14 @@ const Sidebar: React.FC<SidebarProps> = ({
         // 스크립트 수정용 Claude 명령어 생성
         const BASE_DIR = await ipcRenderer.invoke("get-default-path");
         const promptText = `${scriptName}명령어 및 코드에 대해 수정 사항이 있어. 프로젝트 루트는 ${BASE_DIR} 입니다. ${scriptName}명령어를 먼저 실행해보고, 코드 폴더의 ${scriptName} 폴더 내의 기능에 문제가 있다면 고쳐줘.`;
-        const fullCommand = `claude --permission-mode bypassPermissions "${promptText}"`;
 
-        console.log(`수정 명령어: ${fullCommand}`);
+        // Windows에서 한글 처리를 위해 cmd 사용
+        const isWindows = window.require('os').platform() === 'win32';
+        const fullCommand = isWindows
+          ? `cmd /c "claude --permission-mode bypassPermissions \"${promptText.replace(/"/g, '\\\"')}\""`
+          : `claude --permission-mode bypassPermissions "${promptText}"`;
+
+        console.log(`수정 명령어 (Windows: ${isWindows}): ${fullCommand}`);
 
         // Doctor 터미널에 명령어 전송
         console.log(`📤 Doctor 터미널에 명령어 전송 시도:`, {
@@ -960,7 +975,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         setTimeout(async () => {
           try {
             // 1단계: Claude로 의존성 분석 및 설치
-            const claudeCommand = `claude --permission-mode bypassPermissions "코드 폴더내의 프로젝트들을 읽고 난후에, 필요한 의존성을 전부 설치해줘. 그밖에 동작은 일체 하면 안돼."`;
+            const promptForSync = "코드 폴더내의 프로젝트들을 읽고 난후에, 필요한 의존성을 전부 설치해줘. 그밖에 동작은 일체 하면 안돼.";
+
+            // Windows에서 한글 처리를 위해 cmd 사용
+            const isWindows = window.require('os').platform() === 'win32';
+            const claudeCommand = isWindows
+              ? `cmd /c "claude --permission-mode bypassPermissions \"${promptForSync.replace(/"/g, '\\\"')}\""`
+              : `claude --permission-mode bypassPermissions "${promptForSync}"`;
             console.log(`🔄 [SYNC DEBUG] Claude 명령어 실행:`, claudeCommand);
 
             await ipcRenderer.invoke(
