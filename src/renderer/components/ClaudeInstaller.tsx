@@ -30,17 +30,26 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
   const [password, setPassword] = useState<string>('');
   const [passwordError, setPasswordError] = useState<string>('');
   const [isWindows, setIsWindows] = useState<boolean>(false);
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
+  const [platformInfo, setPlatformInfo] = useState<string>('감지 중...');
 
   useEffect(() => {
     if (isVisible) {
       const platform = window.require('os').platform();
       const windowsPlatform = platform === 'win32';
+
+      setDebugInfo(prev => [...prev, `🔍 플랫폼 감지 시작`]);
+      setDebugInfo(prev => [...prev, `📟 감지된 플랫폼: ${platform}`]);
+      setDebugInfo(prev => [...prev, `🪟 Windows 여부: ${windowsPlatform}`]);
+
+      setPlatformInfo(`${platform} (Windows: ${windowsPlatform})`);
       setIsWindows(windowsPlatform);
 
       console.log('플랫폼 감지:', platform, 'Windows:', windowsPlatform);
 
       // 플랫폼 설정 후 설치 시작
       setTimeout(() => {
+        setDebugInfo(prev => [...prev, `🚀 설치 시작 - Windows 모드: ${windowsPlatform}`]);
         startInstallation(windowsPlatform);
       }, 100);
     }
@@ -49,6 +58,11 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
   const startInstallation = async (windowsPlatform?: boolean) => {
     try {
       const isWindowsPlatform = windowsPlatform !== undefined ? windowsPlatform : isWindows;
+
+      setDebugInfo(prev => [...prev, `📋 startInstallation 호출됨`]);
+      setDebugInfo(prev => [...prev, `🔍 전달받은 windowsPlatform: ${windowsPlatform}`]);
+      setDebugInfo(prev => [...prev, `🔍 현재 isWindows 상태: ${isWindows}`]);
+      setDebugInfo(prev => [...prev, `🎯 최종 Windows 플랫폼 판정: ${isWindowsPlatform}`]);
 
       console.log('설치 시작 - Windows 플랫폼:', isWindowsPlatform);
 
@@ -60,6 +74,8 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
 
       // Claude CLI 설치 확인
       const isInstalled = await ipcRenderer.invoke('check-claude-cli');
+
+      setDebugInfo(prev => [...prev, `📦 Claude CLI 설치 상태: ${isInstalled}`]);
 
       if (isInstalled) {
         setInstallProgress({
@@ -73,7 +89,11 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
         return;
       }
 
+      setDebugInfo(prev => [...prev, `🛠️ 설치 필요함 - Windows 모드로 진행: ${isWindowsPlatform}`]);
+
       if (isWindowsPlatform) {
+        setDebugInfo(prev => [...prev, `✅ Windows 경로 선택됨 - 비밀번호 입력 건너뛰기`]);
+
         // Windows에서는 비밀번호 입력 없이 바로 설치 진행
         setInstallProgress({
           stage: 'installing',
@@ -82,6 +102,7 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
         });
 
         setInstallLogs(['🚀 Windows에서 Claude CLI 설치 중...']);
+        setDebugInfo(prev => [...prev, `📦 Windows 설치 진행 중...`]);
 
         const installResult = await installClaudeCLI(''); // 빈 비밀번호로 설치
 
@@ -101,6 +122,8 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
           throw new Error(installResult.error || '설치 중 오류가 발생했습니다.');
         }
       } else {
+        setDebugInfo(prev => [...prev, `❌ Unix/macOS 경로 선택됨 - 비밀번호 입력 필요`]);
+
         // macOS/Linux에서는 비밀번호 입력 요청
         setInstallProgress({
           stage: 'password',
@@ -110,6 +133,7 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
 
         setInstallLogs(['🔐 관리자 권한 확인 중...']);
         setShowPasswordInput(true);
+        setDebugInfo(prev => [...prev, `🔑 비밀번호 입력 창 표시됨`]);
       }
 
     } catch (error) {
@@ -253,6 +277,28 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
         </div>
 
         <div className="installer-content">
+          {/* 디버깅 패널 */}
+          <div className="debug-panel" style={{
+            background: '#f0f0f0',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            padding: '10px',
+            marginBottom: '15px',
+            fontSize: '12px',
+            fontFamily: 'monospace'
+          }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>🐛 디버깅 정보:</div>
+            <div style={{ color: '#666' }}>플랫폼: {platformInfo}</div>
+            <div style={{ color: '#666' }}>isWindows 상태: {isWindows.toString()}</div>
+            <div style={{ color: '#666' }}>showPasswordInput: {showPasswordInput.toString()}</div>
+            <div style={{ color: '#666' }}>설치 단계: {installProgress.stage}</div>
+            <div style={{ maxHeight: '100px', overflowY: 'auto', marginTop: '5px' }}>
+              {debugInfo.map((info, index) => (
+                <div key={index} style={{ fontSize: '11px', color: '#333' }}>{info}</div>
+              ))}
+            </div>
+          </div>
+
           <div className="progress-section">
             <div className="progress-bar">
               <div
