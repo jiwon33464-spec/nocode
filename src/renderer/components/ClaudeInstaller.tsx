@@ -282,9 +282,51 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
   return (
     <div className="claude-installer-overlay">
       <div className="claude-installer-modal">
-        <div className="installer-header">
-          <h2>🤖 Claude CLI 설치</h2>
-          <button className="close-btn" onClick={handleCancel} title="설치 취소">✕</button>
+        <div className="installer-header" style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '24px 24px 20px 24px',
+          borderBottom: '1px solid #e9ecef'
+        }}>
+          <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 600, color: '#333' }}>🤖 Claude CLI 설치</h2>
+          <button
+            className="close-btn"
+            onClick={handleCancel}
+            title="설치 취소"
+            style={{
+              background: '#f8f9fa',
+              border: '2px solid #e9ecef',
+              fontSize: '18px',
+              color: '#dc3545',
+              cursor: 'pointer',
+              padding: '0',
+              borderRadius: '50%',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '32px',
+              height: '32px',
+              minWidth: '32px',
+              minHeight: '32px',
+              fontWeight: 'bold'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#dc3545';
+              e.currentTarget.style.color = '#ffffff';
+              e.currentTarget.style.borderColor = '#dc3545';
+              e.currentTarget.style.transform = 'scale(1.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#f8f9fa';
+              e.currentTarget.style.color = '#dc3545';
+              e.currentTarget.style.borderColor = '#e9ecef';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            ×
+          </button>
         </div>
 
         <div className="installer-content">
@@ -303,6 +345,7 @@ const ClaudeInstaller: React.FC<ClaudeInstallerProps> = ({
             <div style={{ color: '#666' }}>isWindows 상태: {isWindows.toString()}</div>
             <div style={{ color: '#666' }}>showPasswordInput: {showPasswordInput.toString()}</div>
             <div style={{ color: '#666' }}>설치 단계: {installProgress.stage}</div>
+            <div style={{ color: '#666' }}>X 버튼 렌더링 여부: ✓ (인라인 스타일 적용됨)</div>
             <div style={{ maxHeight: '100px', overflowY: 'auto', marginTop: '5px' }}>
               {debugInfo.map((info, index) => (
                 <div key={index} style={{ fontSize: '11px', color: '#333' }}>{info}</div>
