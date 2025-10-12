@@ -1,0 +1,10 @@
+
+>> claude --permission-mode bypassPermissions '화해온보딩.md를 읽고 프롬프트를  읽어서 코드를 만들어줘. 프로젝트 루트는 C:\Users\화해글로벌\Documents 입니다. 만들 코드는 루트의 코드폴더에 화해온보딩.md 폴더 내에 만들어줘. 코드를 다 작성하고 나면 package.json에 만든 코드를 실행할 수 있는 화해온보딩.md 이름과 동일한 명령어를 만들어줘.
+위치 줄:21 문자:45
++ claude --permission-mode bypassPermissions '화해온보딩.md를 읽고 프롬프트를   
+읽어서 코드 ...
++                                             ~~~~~~~~~
+식 또는 문에서 예기치 않은 '화해온보딩.md를' 토큰입니다.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordEx  
+   ception
+    + FullyQualifiedErrorId : UnexpectedToken
