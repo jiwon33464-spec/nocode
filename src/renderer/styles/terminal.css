@@ -249,13 +249,59 @@
 
 .xterm-container .xterm-selection {
   position: absolute;
-  opacity: 0.3;
+  opacity: 0.4;
   pointer-events: none;
 }
 
 .xterm-container .xterm-selection div {
   position: absolute;
-  background-color: #3390ff;
+  background-color: #007acc;
+}
+
+/* 터미널 전체 텍스트 선택 강제 활성화 */
+.xterm-container {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+.xterm-container * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  cursor: text !important;
+  /* pointer-events는 제거하여 키보드 입력 방해하지 않도록 */
+}
+
+/* xterm 특정 요소들 오버라이드 */
+.xterm-container .xterm,
+.xterm-container .xterm-screen,
+.xterm-container .xterm-viewport,
+.xterm-container .xterm-rows,
+.xterm-container .xterm-text-layer,
+.xterm-container .xterm .xterm-text-layer {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  cursor: text !important;
+  /* pointer-events auto 제거 - 키보드 입력 방해 방지 */
+}
+
+/* xterm의 마우스 이벤트 차단 해제 */
+.xterm-container .xterm-screen canvas {
+  pointer-events: none !important;
+}
+
+/* 텍스트 요소들만 활성화 */
+.xterm-container .xterm-rows > div,
+.xterm-container .xterm-rows span {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text !important;
+  /* pointer-events auto 제거 - 자연스러운 이벤트 흐름 유지 */
 }
 
 /* 스크롤바 스타일링 */

@@ -104,12 +104,20 @@ const Terminal: React.FC<TerminalProps> = ({
     scrollback: 1000,
     allowTransparency: false,
     disableStdin: false,
-    macOptionIsMeta: true,
+    macOptionIsMeta: false, // 텍스트 선택을 위해 비활성화
     windowsMode: false,
-    altClickMovesCursor: true,
+    altClickMovesCursor: false, // 텍스트 선택을 위해 비활성화
     fontWeight: "normal" as const,
     fontWeightBold: "bold" as const,
     minimumContrastRatio: 1,
+    // 텍스트 선택 및 드래그 활성화 - 모든 마우스 차단 해제
+    rightClickSelectsWord: false, // 일단 비활성화해서 테스트
+    allowProposedApi: true,
+    screenReaderMode: false,
+    scrollSensitivity: 1,
+    fastScrollSensitivity: 5,
+    // 마우스 모드 완전 비활성화
+    logLevel: 'off' as const,
   });
 
   // Create terminal instance
@@ -129,6 +137,142 @@ const Terminal: React.FC<TerminalProps> = ({
       terminal.open(containerRef.current);
       fitAddon.fit();
 
+      // 강제로 텍스트 선택 활성화
+      if (terminal.element) {
+        terminal.element.style.userSelect = 'text';
+        terminal.element.style.webkitUserSelect = 'text';
+        terminal.element.style.cursor = 'text';
+
+        // 터미널의 모든 레이어에 텍스트 선택 활성화
+        const enableTextSelection = (element: Element) => {
+          const style = (element as HTMLElement).style;
+          style.userSelect = 'text';
+          style.webkitUserSelect = 'text';
+          (style as any).mozUserSelect = 'text';
+          (style as any).msUserSelect = 'text';
+          style.pointerEvents = 'auto';
+        };
+
+        // 모든 xterm 관련 요소들에 설정 적용
+        const selectors = [
+          '.xterm-screen',
+          '.xterm-viewport',
+          '.xterm-rows',
+          '.xterm-text-layer',
+          '.xterm-selection',
+          '.xterm'
+        ];
+
+        selectors.forEach(selector => {
+          const elements = terminal.element?.querySelectorAll(selector);
+          if (elements) {
+            elements.forEach(enableTextSelection);
+          }
+        });
+
+        // 전체 터미널 요소에도 적용
+        enableTextSelection(terminal.element);
+
+        // 동적으로 생성되는 터미널 요소들도 처리
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+              if (node instanceof HTMLElement) {
+                enableTextSelection(node);
+                // 새로 추가된 노드의 자식들도 처리
+                const childElements = node.querySelectorAll('*');
+                childElements.forEach(enableTextSelection);
+              }
+            });
+          });
+        });
+
+        // 터미널 요소의 변화를 감지
+        observer.observe(terminal.element, {
+          childList: true,
+          subtree: true
+        });
+
+        // xterm의 마우스 이벤트 핸들러 완전 제거 및 재구성
+        console.log('🔧 xterm 마우스 이벤트 핸들러 재설정 중...');
+
+        // xterm의 내부 이벤트 리스너들을 제거
+        const removeXtermMouseListeners = () => {
+          if (terminal.element) {
+            const clonedElement = terminal.element.cloneNode(true) as HTMLElement;
+            terminal.element.parentNode?.replaceChild(clonedElement, terminal.element);
+            (terminal as any).element = clonedElement;
+          }
+        };
+
+        // xterm 초기화 완료 후 선택적 오버라이드 (입력 기능 보존)
+        setTimeout(() => {
+          console.log('🔄 xterm 선택적 오버라이드 시작 - 입력 기능 보존');
+
+          if (terminal.element) {
+            // 강력한 텍스트 선택 활성화 (이벤트 제거하지 않고)
+            const forceTextSelection = (el: HTMLElement) => {
+              el.style.setProperty('user-select', 'text', 'important');
+              el.style.setProperty('-webkit-user-select', 'text', 'important');
+              el.style.setProperty('cursor', 'text', 'important');
+              // pointer-events는 건드리지 않아서 키보드 입력 보존
+            };
+
+            // 모든 요소에 텍스트 선택만 적용
+            forceTextSelection(terminal.element);
+            const allElements = terminal.element.querySelectorAll('*');
+            allElements.forEach((el) => forceTextSelection(el as HTMLElement));
+
+            // canvas는 마우스만 비활성화하고 키보드는 유지
+            const canvas = terminal.element.querySelector('canvas');
+            if (canvas) {
+              (canvas as HTMLElement).style.setProperty('pointer-events', 'none', 'important');
+              console.log('🎨 Canvas 마우스 이벤트만 비활성화 (키보드 유지)');
+            }
+
+            // 터미널에 포커스를 주어 키보드 입력 가능하게 함
+            terminal.focus();
+            console.log('⌨️ 터미널 포커스 설정 - 키보드 입력 활성화');
+
+            // 터미널 클릭 시 포커스 유지 (텍스트 선택과 충돌하지 않도록)
+            terminal.element.addEventListener('click', (e) => {
+              // 텍스트 선택이 없을 때만 포커스
+              if (!window.getSelection()?.toString()) {
+                terminal.focus();
+                console.log('🖱️ 터미널 클릭 - 포커스 복원');
+              }
+            });
+
+            // 키보드 이벤트가 터미널에 전달되도록 보장
+            document.addEventListener('keydown', (e) => {
+              // 터미널 영역에서 키보드 이벤트 발생 시 터미널로 포커스
+              if (terminal.element?.contains(e.target as Node)) {
+                if (!terminal.element.matches(':focus-within')) {
+                  terminal.focus();
+                  console.log('⌨️ 키보드 입력 감지 - 터미널 포커스');
+                }
+              }
+            });
+
+            console.log('✅ 텍스트 선택 + 키보드 입력 균형 설정 완료');
+          }
+        }, 1500);
+
+        // 주기적으로 텍스트 선택 상태 확인 및 재설정
+        const maintainTextSelection = () => {
+          if (terminal.element) {
+            const canvas = terminal.element.querySelector('canvas');
+            if (canvas && (canvas as HTMLElement).style.pointerEvents !== 'none') {
+              (canvas as HTMLElement).style.setProperty('pointer-events', 'none', 'important');
+              console.log('🔧 Canvas 이벤트 차단 재설정');
+            }
+          }
+        };
+
+        // 2초마다 체크
+        setInterval(maintainTextSelection, 2000);
+      }
+
       // Handle input
       terminal.onData((data) => {
         console.log(`⌨️ 터미널 입력:`, {
@@ -138,7 +282,7 @@ const Terminal: React.FC<TerminalProps> = ({
         ipcRenderer.invoke("terminal-write", id, data);
       });
 
-      // 터미널에 키보드 이벤트 리스너 추가 (복사 기능)
+      // 터미널에 키보드 이벤트 리스너 추가 (복사/붙여넣기 기능)
       terminal.onKey(({ key, domEvent }) => {
         // Ctrl+C 또는 Cmd+C로 선택된 텍스트 복사
         if ((domEvent.ctrlKey || domEvent.metaKey) && domEvent.key === "c") {
@@ -150,11 +294,61 @@ const Terminal: React.FC<TerminalProps> = ({
               .then((success: boolean) => {
                 if (success) {
                   console.log("✅ 터미널 선택 텍스트 복사됨:", id);
-                  // 복사 피드백 (짧게 표시)
-                  terminal.write("\x1b[32m✓\x1b[0m");
                 }
               });
           }
+        }
+
+        // Ctrl+V 또는 Cmd+V로 클립보드 내용 붙여넣기
+        if ((domEvent.ctrlKey || domEvent.metaKey) && domEvent.key === "v") {
+          domEvent.preventDefault();
+          navigator.clipboard.readText()
+            .then((text: string) => {
+              if (text) {
+                console.log("📋 클립보드에서 붙여넣기:", id);
+                ipcRenderer.invoke("terminal-write", id, text);
+              }
+            })
+            .catch((error: any) => {
+              console.error("❌ 클립보드 읽기 실패:", error);
+            });
+        }
+      });
+
+      // 우클릭 컨텍스트 메뉴 처리
+      terminal.element?.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        const selection = terminal.getSelection();
+
+        if (selection) {
+          // 선택된 텍스트가 있으면 복사 메뉴 표시
+          const copyOption = window.confirm('선택된 텍스트를 클립보드에 복사하시겠습니까?');
+          if (copyOption) {
+            ipcRenderer.invoke("copy-terminal-selection", selection)
+              .then((success: boolean) => {
+                if (success) {
+                  console.log("✅ 우클릭으로 터미널 텍스트 복사됨:", id);
+                }
+              });
+          }
+        } else {
+          // 선택된 텍스트가 없으면 붙여넣기 메뉴 표시
+          navigator.clipboard.readText()
+            .then((text: string) => {
+              if (text) {
+                const pasteOption = window.confirm(`클립보드 내용을 붙여넣기 하시겠습니까?\n\n${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`);
+                if (pasteOption) {
+                  console.log("📋 우클릭으로 클립보드 붙여넣기:", id);
+                  ipcRenderer.invoke("terminal-write", id, text);
+                }
+              } else {
+                window.alert('클립보드가 비어있습니다.');
+              }
+            })
+            .catch((error: any) => {
+              console.error("❌ 클립보드 읽기 실패:", error);
+              window.alert('클립보드 접근 권한이 필요합니다.');
+            });
         }
       });
 
