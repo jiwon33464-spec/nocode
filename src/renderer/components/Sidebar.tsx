@@ -213,16 +213,29 @@ const Sidebar: React.FC<SidebarProps> = ({
 - [ ] SIGINT 안전 종료
 - [ ] 에러 발생 시 메시지와 종료 코드
 
-위 내용을 추가적으로 적용해줘. 
+위 내용을 추가적으로 적용해줘.
 
         `;
         const promptText = base; // extraMessage 없이 기본 메시지만 사용
 
-        // Windows에서 한글 처리를 위해 cmd 사용
+        // Windows에서 안전한 명령어 실행을 위한 처리
         const isWindows = window.require('os').platform() === 'win32';
-        const fullCommand = isWindows
-          ? `cmd /c "claude --permission-mode bypassPermissions \"${promptText.replace(/"/g, '\\\"')}\""`
-          : `claude --permission-mode bypassPermissions "${promptText}"`;
+
+        let fullCommand: string;
+        if (isWindows) {
+          // Windows에서 PowerShell 특수문자 이스케이핑
+          const escapedPrompt = promptText
+            .replace(/\\/g, '\\\\')  // 백슬래시 이스케이핑
+            .replace(/"/g, '\\"')    // 따옴표 이스케이핑
+            .replace(/\$/g, '\\$')   // 달러 기호 이스케이핑
+            .replace(/`/g, '\\`')    // 백틱 이스케이핑
+            .replace(/\[/g, '\\[')   // 대괄호 이스케이핑
+            .replace(/\]/g, '\\]');  // 대괄호 이스케이핑
+
+          fullCommand = `powershell -Command "& {claude --permission-mode bypassPermissions '${escapedPrompt}'}"`;
+        } else {
+          fullCommand = `claude --permission-mode bypassPermissions "${promptText}"`;
+        }
 
         console.log(`실행 명령어 (Windows: ${isWindows}): ${fullCommand}`);
 
@@ -307,11 +320,24 @@ const Sidebar: React.FC<SidebarProps> = ({
         const BASE_DIR = await ipcRenderer.invoke("get-default-path");
         const base = `${filename}프롬프트에 대해 수정 사항이 있어. 프로젝트 루트는 ${BASE_DIR} 입니다. 코드 폴더의 ${filename} 폴더 내의 기능도 확인해줘.`;
 
-        // Windows에서 한글 처리를 위해 cmd 사용
+        // Windows에서 안전한 명령어 실행을 위한 처리
         const isWindows = window.require('os').platform() === 'win32';
-        const fullCommand = isWindows
-          ? `cmd /c "claude --permission-mode bypassPermissions \"${base.replace(/"/g, '\\\"')}\""`
-          : `claude --permission-mode bypassPermissions "${base}"`;
+
+        let fullCommand: string;
+        if (isWindows) {
+          // Windows에서 PowerShell 특수문자 이스케이핑
+          const escapedPrompt = base
+            .replace(/\\/g, '\\\\')  // 백슬래시 이스케이핑
+            .replace(/"/g, '\\"')    // 따옴표 이스케이핑
+            .replace(/\$/g, '\\$')   // 달러 기호 이스케이핑
+            .replace(/`/g, '\\`')    // 백틱 이스케이핑
+            .replace(/\[/g, '\\[')   // 대괄호 이스케이핑
+            .replace(/\]/g, '\\]');  // 대괄호 이스케이핑
+
+          fullCommand = `powershell -Command "& {claude --permission-mode bypassPermissions '${escapedPrompt}'}"`;
+        } else {
+          fullCommand = `claude --permission-mode bypassPermissions "${base}"`;
+        }
 
         console.log(`수정 명령어 (Windows: ${isWindows}): ${fullCommand}`);
 
@@ -522,11 +548,24 @@ const Sidebar: React.FC<SidebarProps> = ({
         const BASE_DIR = await ipcRenderer.invoke("get-default-path");
         const promptText = `${scriptName}명령어 및 코드에 대해 수정 사항이 있어. 프로젝트 루트는 ${BASE_DIR} 입니다. ${scriptName}명령어를 먼저 실행해보고, 코드 폴더의 ${scriptName} 폴더 내의 기능에 문제가 있다면 고쳐줘.`;
 
-        // Windows에서 한글 처리를 위해 cmd 사용
+        // Windows에서 안전한 명령어 실행을 위한 처리
         const isWindows = window.require('os').platform() === 'win32';
-        const fullCommand = isWindows
-          ? `cmd /c "claude --permission-mode bypassPermissions \"${promptText.replace(/"/g, '\\\"')}\""`
-          : `claude --permission-mode bypassPermissions "${promptText}"`;
+
+        let fullCommand: string;
+        if (isWindows) {
+          // Windows에서 PowerShell 특수문자 이스케이핑
+          const escapedPrompt = promptText
+            .replace(/\\/g, '\\\\')  // 백슬래시 이스케이핑
+            .replace(/"/g, '\\"')    // 따옴표 이스케이핑
+            .replace(/\$/g, '\\$')   // 달러 기호 이스케이핑
+            .replace(/`/g, '\\`')    // 백틱 이스케이핑
+            .replace(/\[/g, '\\[')   // 대괄호 이스케이핑
+            .replace(/\]/g, '\\]');  // 대괄호 이스케이핑
+
+          fullCommand = `powershell -Command "& {claude --permission-mode bypassPermissions '${escapedPrompt}'}"`;
+        } else {
+          fullCommand = `claude --permission-mode bypassPermissions "${promptText}"`;
+        }
 
         console.log(`수정 명령어 (Windows: ${isWindows}): ${fullCommand}`);
 
@@ -977,11 +1016,24 @@ const Sidebar: React.FC<SidebarProps> = ({
             // 1단계: Claude로 의존성 분석 및 설치
             const promptForSync = "코드 폴더내의 프로젝트들을 읽고 난후에, 필요한 의존성을 전부 설치해줘. 그밖에 동작은 일체 하면 안돼.";
 
-            // Windows에서 한글 처리를 위해 cmd 사용
+            // Windows에서 안전한 명령어 실행을 위한 처리
             const isWindows = window.require('os').platform() === 'win32';
-            const claudeCommand = isWindows
-              ? `cmd /c "claude --permission-mode bypassPermissions \"${promptForSync.replace(/"/g, '\\\"')}\""`
-              : `claude --permission-mode bypassPermissions "${promptForSync}"`;
+
+            let claudeCommand: string;
+            if (isWindows) {
+              // Windows에서 PowerShell 특수문자 이스케이핑
+              const escapedPrompt = promptForSync
+                .replace(/\\/g, '\\\\')  // 백슬래시 이스케이핑
+                .replace(/"/g, '\\"')    // 따옴표 이스케이핑
+                .replace(/\$/g, '\\$')   // 달러 기호 이스케이핑
+                .replace(/`/g, '\\`')    // 백틱 이스케이핑
+                .replace(/\[/g, '\\[')   // 대괄호 이스케이핑
+                .replace(/\]/g, '\\]');  // 대괄호 이스케이핑
+
+              claudeCommand = `powershell -Command "& {claude --permission-mode bypassPermissions '${escapedPrompt}'}"`;
+            } else {
+              claudeCommand = `claude --permission-mode bypassPermissions "${promptForSync}"`;
+            }
             console.log(`🔄 [SYNC DEBUG] Claude 명령어 실행:`, claudeCommand);
 
             await ipcRenderer.invoke(
