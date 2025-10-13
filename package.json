@@ -10,7 +10,7 @@
     "electron": "electron .",
     "electron-dev": "NODE_ENV=development electron .",
     "start": "npm run build && npm run electron",
-    "postinstall": "electron-builder install-app-deps",
+    "_postinstall": "electron-builder install-app-deps",
     "rebuild": "electron-rebuild -f",
     "rebuild:node-pty": "electron-rebuild -f -m node_modules/node-pty",
     "dist": "electron-builder",
@@ -19,6 +19,11 @@
     "dist:win:docker": "docker build -f Dockerfile.windows -t nocode-windows . && docker run --rm -v $(pwd)/release:/project/release nocode-windows",
     "dist:linux": "electron-builder --linux",
     "dist:all": "electron-builder --mac --win --linux",
+    "release:win": "npm run build && npm run package:win",
+    "package:win": "electron-builder --win && cd release && powershell -Command \"Compress-Archive -Path win-unpacked -DestinationPath nocode-${npm_package_version}-win-portable.zip -Force\"",
+    "version:patch": "npm version patch",
+    "version:minor": "npm version minor",
+    "version:major": "npm version major",
     "test": "echo \"Error: no test specified\" && exit 1",
     "테스트": "ts-node 코드/테스트.ts"
   },
@@ -28,15 +33,19 @@
   "build": {
     "appId": "com.nocode.app",
     "productName": "nocode",
+    "buildDependenciesFromSource": false,
+    "npmRebuild": false,
     "directories": {
-      "output": "release"
+      "output": "dist-output"
     },
     "files": [
       "dist/**/*",
-      "node_modules/**/*"
+      "node_modules/**/*",
+      "!node_modules/**/node_modules"
     ],
-    "beforeBuild": "echo 'Building for target platform...'",
-    "npmRebuild": false,
+    "asarUnpack": [
+      "node_modules/node-pty/**/*"
+    ],
     "mac": {
       "category": "public.app-category.developer-tools",
       "identity": null,
@@ -54,22 +63,15 @@
     "win": {
       "target": [
         {
-          "target": "nsis",
-          "arch": [
-            "x64",
-            "ia32"
-          ]
-        },
-        {
           "target": "portable",
           "arch": [
             "x64"
           ]
         }
       ],
-      "icon": "assets/icon.ico",
       "requestedExecutionLevel": "asInvoker",
-      "artifactName": "${productName}-${version}-${arch}.${ext}"
+      "artifactName": "${productName}-${version}-win.${ext}",
+      "signAndEditExecutable": false
     },
     "linux": {
       "target": [
@@ -96,7 +98,7 @@
     "@types/yauzl": "^2.10.3",
     "@xterm/xterm": "^5.5.0",
     "archiver": "^7.0.1",
-    "node-pty": "^1.1.0-beta34",
+    "node-pty": "^1.0.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "yauzl": "^3.2.0"
@@ -111,6 +113,7 @@
     "electron-builder": "^26.0.12",
     "electron-rebuild": "^3.2.9",
     "html-webpack-plugin": "^5.6.4",
+    "nan": "^2.23.0",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.4",
     "ts-node": "^10.9.2",

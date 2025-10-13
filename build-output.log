@@ -1,0 +1,27 @@
+
+> nocode@1.0.0 dist:win
+> electron-builder --win
+
+  • electron-builder  version=26.0.12 os=10.0.26100
+  • loaded configuration  file=package.json ("build" field)
+  • @electron/rebuild already used by electron-builder, please consider to remove excess dependency from devDependencies
+
+To ensure your native dependencies are always matched electron version, simply add script `"postinstall": "electron-builder install-app-deps" to your `package.json`
+  • executing @electron/rebuild  electronVersion=38.2.2 arch=x64 buildFromSource=false appDir=./
+  • installing native dependencies  arch=x64
+  • preparing       moduleName=node-pty arch=x64
+  • finished        moduleName=node-pty arch=x64
+  • completed installing native dependencies
+  • packaging       platform=win32 arch=x64 electron=38.2.2 appOutDir=release\win-unpacked
+  ⨯ dependency path is undefined  packageName=nan data=[object Object] parentModule=node-pty parentVersion=1.0.0
+  ⨯ unable to parse `path` during `tree.dependencies` reduce  failedTask=build stackTrace=Error: unable to parse `path` during `tree.dependencies` reduce
+    at C:\Users\화해글로벌\Downloads\p-desktop\p-desktop\node_modules\app-builder-lib\src\node-module-collector\nodeModulesCollector.ts:113:15
+    at Array.reduce (<anonymous>)
+    at YarnNodeModulesCollector.convertToDependencyGraph (C:\Users\화해글로벌\Downloads\p-desktop\p-desktop\node_modules\app-builder-lib\src\node-module-collector\nodeModulesCollector.ts:95:52)
+    at C:\Users\화해글로벌\Downloads\p-desktop\p-desktop\node_modules\app-builder-lib\src\node-module-collector\nodeModulesCollector.ts:135:32
+    at Array.reduce (<anonymous>)
+    at YarnNodeModulesCollector.convertToDependencyGraph (C:\Users\화해글로벌\Downloads\p-desktop\p-desktop\node_modules\app-builder-lib\src\node-module-collector\nodeModulesCollector.ts:95:52)
+    at YarnNodeModulesCollector.getNodeModules (C:\Users\화해글로벌\Downloads\p-desktop\p-desktop\node_modules\app-builder-lib\src\node-module-collector\nodeModulesCollector.ts:23:51)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at computeNodeModuleFileSets (C:\Users\화해글로벌\Downloads\p-desktop\p-desktop\node_modules\app-builder-lib\src\util\appFileCopier.ts:181:16)
+    at C:\Users\화해글로벌\Downloads\p-desktop\p-desktop\node_modules\app-builder-lib\src\platformPackager.ts:500:34

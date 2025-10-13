@@ -3,3 +3,4 @@ node_modules
 .claude
 release
 P-Desktop.app
+dist-output

@@ -174,7 +174,8 @@ ipcMain.handle("terminal-create", (event, id: string, workingDir?: string) => {
     const shell = isWindows ? "powershell.exe" : process.env.SHELL || "/bin/bash";
 
     // shell 인자 설정 (login shell로 실행하여 profile 로드)
-    const shellArgs = isWindows ? [] : ["-l"];
+    // Windows: -ExecutionPolicy Bypass로 보안 정책 우회 (빌드된 앱에서 PSSecurityException 방지)
+    const shellArgs = isWindows ? ["-ExecutionPolicy", "Bypass", "-NoLogo"] : ["-l"];
 
     // Windows와 Unix 환경변수 분리
     const terminalEnv = isWindows
@@ -201,6 +202,7 @@ ipcMain.handle("terminal-create", (event, id: string, workingDir?: string) => {
       cwd: workingDir || currentWorkingDirectory, // 선택된 폴더를 작업 디렉토리로 설정
       env: terminalEnv,
       handleFlowControl: false,
+      useConpty: false, // Windows에서 winpty 사용 (conpty.node 빌드 이슈 회피)
     });
 
     terminals[id] = ptyProcess;
